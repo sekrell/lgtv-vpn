@@ -1,0 +1,10 @@
+{
+  "id": "com.sk.app.lgtv-vpn",
+  "version": "0.0.1",
+  "vendor": "My Company",
+  "type": "web",
+  "main": "index.html",
+  "title": "VPN",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png"
+}

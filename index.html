@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VPN Control</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <script src="webOSTVjs-1.2.4/webOSTV-dev.js"></script>
+  <script src="./lib/spatial_navigation.js"></script>
+  <script src="./js/index.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <h1>VPN Control</h1>
+    <div class="status-container">
+      <span>Status:</span>
+      <span id="state" class="status-text">DISCONNECTED</span>
+    </div>
+    <div class="config-container">
+      <label for="configDropdown">Konfiguration:</label>
+      <select id="configDropdown" class="item">
+		<!-- Options will be populated dynamically -->
+      </select>
+    </div>
+    <button id="cbtn" class="button-3 item">Connect</button>
+    <div id="errorMsg" class="error-message"></div>
+  </div>
+</body>
+</html>
