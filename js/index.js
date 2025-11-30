@@ -61,7 +61,7 @@ function showError(msg) {
 }
 
 function startPolling() {
-  if (pollInterval) clearInterval(pollInterval);
+  if (pollInterval) return;
   pollInterval = setInterval(getState, 3000);
 }
 
@@ -103,6 +103,7 @@ async function stopVpn() {
       command: '{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 7505'
     });
     setTimeout(getState, 3000);
+    startPolling();
   } catch (e) {
     showError("Stop failed: " + e.message);
   } finally {
@@ -120,7 +121,6 @@ async function getState() {
       curState = "CONNECTED";
       document.getElementById("cbtn").innerText = "Stop";
       document.getElementById("state").innerText = "CONNECTED";
-      stopPolling();
     } else {
       curState = "CONNECTING";
       document.getElementById("cbtn").innerText = "Connecting...";
@@ -190,6 +190,14 @@ async function initVPN() {
     showError("Init failed: " + e.message);
   }
   await getState();
+  startPolling();
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    getState();
+    startPolling();
+  }
 }
 
 window.addEventListener("load", () => {
@@ -200,6 +208,13 @@ window.addEventListener("load", () => {
   document.getElementById("cbtn").addEventListener("click", btnClicked);
   loadProfiles().then(initVPN);
 
-  document.addEventListener("webOSLaunch", getState, true);
-  document.addEventListener("webOSRelaunch", getState, true);
+  document.addEventListener("webOSLaunch", () => {
+    getState();
+    startPolling();
+  }, true);
+  document.addEventListener("webOSRelaunch", () => {
+    getState();
+    startPolling();
+  }, true);
+  document.addEventListener("visibilitychange", handleVisibilityChange, true);
 });
