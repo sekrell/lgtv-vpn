@@ -136,9 +136,49 @@ async function getState() {
 async function startVPN() {
   const e = document.getElementById("configDropdown");
   const value = e.value;
+  if (!value) {
+    throw new Error("Kein Profil ausgewählt");
+  }
   await lunaCall("luna://org.webosbrew.hbchannel.service/spawn", {
     command: "/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 0.0.0.0 7505 --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/" + value + " --daemon"
   });
+}
+
+async function loadProfiles() {
+  const dropdown = document.getElementById("configDropdown");
+  dropdown.innerHTML = "";
+
+  try {
+    const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
+      command:
+        "cd /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles && ls -1 *.ovpn 2>/dev/null"
+    });
+
+    const files = (r.stdoutString || "")
+      .split(/\r?\n/)
+      .map((f) => f.trim())
+      .filter((f) => f.length > 0);
+
+    if (files.length === 0) {
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = "Keine Profile gefunden";
+      dropdown.appendChild(emptyOption);
+      dropdown.disabled = true;
+      return;
+    }
+
+    dropdown.disabled = false;
+    files.forEach((file) => {
+      const option = document.createElement("option");
+      option.value = file;
+      option.textContent = file.replace(/\.ovpn$/i, "");
+      dropdown.appendChild(option);
+    });
+  } catch (e) {
+    dropdown.disabled = true;
+    showError("Profile konnten nicht geladen werden: " + e.message);
+  }
 }
 
 async function initVPN() {
@@ -158,7 +198,7 @@ window.addEventListener("load", () => {
   SpatialNavigation.makeFocusable();
   eventRegister.addEventListeners();
   document.getElementById("cbtn").addEventListener("click", btnClicked);
-  initVPN();
+  loadProfiles().then(initVPN);
 
   document.addEventListener("webOSLaunch", getState, true);
   document.addEventListener("webOSRelaunch", getState, true);
