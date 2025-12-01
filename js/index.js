@@ -12,6 +12,8 @@ const eventRegister = (() => {
 
 let curState = "UNKNOWN", poll = null;
 const mgmtPort = 7505;
+let visibilityProp = null;
+let visibilityEvent = null;
 
 function lunaCall(uri, parameters, timeout = 8000) {
   return Promise.race([
@@ -46,6 +48,21 @@ function showError(msg) { document.getElementById('errorMsg').innerText = msg; }
 
 function startPoll() { if (poll) clearInterval(poll); poll = setInterval(getState, 3000); }
 function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
+
+async function terminateDaemon() {
+  try {
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
+  } catch (e) {
+    extendDebug(`Cleanup stop failed: ${e.message}`);
+  }
+}
+
+function cleanup() { stopPoll(); }
+
+function closeCleanup() {
+  cleanup();
+  terminateDaemon();
+}
 
 async function getState(retries = 3) {
   try {
@@ -119,7 +136,7 @@ async function loadProfiles() {
 
 async function connect() {
   const cfg = document.getElementById('configDropdown').value;
-  if (!value) {
+  if (!cfg) {
     showError('No Profile found');
     return;
   }
@@ -140,7 +157,7 @@ async function disconnect() {
   setDropdownDisabled(true);
   setDebug('Sending SIGTERM...');
   try {
-    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
+    await terminateDaemon();
     setTimeout(getState, 2500);
   } catch (e) {
     showError('Stop failed ' + e.message); setButtonDisabled(false);
@@ -158,10 +175,37 @@ async function initVPN() {
   await getState(1);
 }
 
-window.addEventListener('beforeunload', () => {
-  polling = false;           // stop Promise-Loop
-  stopPoll();                // falls setInterval-Backup
-});
+function resumeStateSync() {
+  getState(3);
+  startPoll();
+}
+
+function configureVisibilityHandling() {
+  if (visibilityEvent) return;
+  if (typeof document.hidden !== 'undefined') {
+    visibilityProp = 'hidden';
+    visibilityEvent = 'visibilitychange';
+  } else if (typeof document.webkitHidden !== 'undefined') {
+    visibilityProp = 'webkitHidden';
+    visibilityEvent = 'webkitvisibilitychange';
+  }
+
+  if (!visibilityEvent) return;
+
+  document.addEventListener(visibilityEvent, () => {
+    const isHidden = document[visibilityProp];
+    if (isHidden) {
+      stopPoll();
+    } else {
+      resumeStateSync();
+    }
+  }, true);
+}
+
+window.addEventListener('beforeunload', closeCleanup, false);
+if (window.webOSSystem) {
+  window.webOSSystem.onclose = closeCleanup;
+}
 
 window.addEventListener('load', () => {
   SpatialNavigation.init();
@@ -169,7 +213,8 @@ window.addEventListener('load', () => {
   SpatialNavigation.makeFocusable();
   eventRegister.add();
   document.getElementById('cbtn').addEventListener('click', btnClick);
-  loadProfiles().then(initVPN);
-  document.addEventListener('webOSLaunch', () => getState(5), true);
-  document.addEventListener('webOSRelaunch', () => getState(5), true);
+  configureVisibilityHandling();
+  loadProfiles().then(() => { initVPN().then(startPoll); });
+  document.addEventListener('webOSLaunch', resumeStateSync, true);
+  document.addEventListener('webOSRelaunch', resumeStateSync, true);
 });
