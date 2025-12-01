@@ -33,10 +33,20 @@ function setButtonLabel(state) {
   const btn = document.getElementById('cbtn');
   btn.innerText = state === "CONNECTED" ? "Stop" : "Connect";
 }
-function setButtonDisabled(dis) { document.getElementById('cbtn').disabled = dis; 
-  SpatialNavigation.makeFocusable();}
-function setDropdownDisabled(dis) { document.getElementById('configDropdown').disabled = dis; 
-  SpatialNavigation.makeFocusable();}
+function focusFirstEnabledItem() {
+  const enabledItem = Array.from(document.getElementsByClassName('item'))
+    .find(el => !el.disabled);
+
+  if (enabledItem && document.activeElement?.disabled) {
+    enabledItem.focus();
+  }
+}
+function setButtonDisabled(dis) { document.getElementById('cbtn').disabled = dis;
+  SpatialNavigation.makeFocusable();
+  focusFirstEnabledItem();}
+function setDropdownDisabled(dis) { document.getElementById('configDropdown').disabled = dis;
+  SpatialNavigation.makeFocusable();
+  focusFirstEnabledItem();}
 
 function updateStateLabel(text, cls = null) {
   const s = document.getElementById('state');
