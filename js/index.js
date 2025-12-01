@@ -1,159 +1,92 @@
 
+/* Remote focus helpers */
 const eventRegister = (() => {
-  const itemArray = document.getElementsByClassName("item");
-
-  const _onMouseOverEvent = (e) => {
-    for (let item of itemArray) {
-      item.blur();
-    }
-    document.getElementById(e.target.id).focus();
-  };
-
-  const _itemKeyDownHandler = (e) => {
-    if (e.keyCode === 13) {
-      document.getElementById(e.target.id).classList.add("active");
-    }
-  };
-
-  const _itemKeyUpHandler = (e) => {
-    if (e.keyCode === 13) {
-      document.getElementById(e.target.id).classList.remove("active");
-    }
-  };
-
-  const _itemMouseOutHandler = (e) => {
-    document.getElementById(e.target.id).blur();
-  };
-
-  const addEventListeners = () => {
-    for (let item of itemArray) {
-      item.addEventListener("mouseover", _onMouseOverEvent);
-      item.addEventListener("mouseout", _itemMouseOutHandler);
-      item.addEventListener("keyup", _itemKeyUpHandler);
-      item.addEventListener("keydown", _itemKeyDownHandler);
-    }
-  };
-
-  return { addEventListeners };
+  const items = () => document.getElementsByClassName("item");
+  const blurAll = () => { for (const n of items()) n.blur(); };
+  const over = e => { blurAll(); e.target.focus(); };
+  const kd = e => { if (e.keyCode === 13) e.target.classList.add("active"); };
+  const ku = e => { if (e.keyCode === 13) e.target.classList.remove("active"); };
+  const add = () => { for (const n of items()) { n.addEventListener("mouseover", over); n.addEventListener("mouseout", () => n.blur()); n.addEventListener("keydown", kd); n.addEventListener("keyup", ku); } };
+  return { add };
 })();
 
-let curState = "UNKNOWN";
-let pollInterval = null;
+let curState = "UNKNOWN", poll = null;
+const mgmtPort = 7505;
 
-function lunaCall(uri, parameters, timeout = 10000) {
+function lunaCall(uri, parameters, timeout = 8000) {
   return Promise.race([
-    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeout)),
-    new Promise((resolve, reject) => {
-      const s = uri.indexOf("/", 7);
-      webOS.service.request(uri.substr(0, s), {
-        method: uri.substr(s + 1),
+    new Promise((_, r) => setTimeout(() => r(new Error("Timeout")), timeout)),
+    new Promise((res, rej) => {
+      const s = uri.indexOf('/', 7);
+      webOS.service.request(uri.substring(0, s), {
+        method: uri.substring(s + 1),
         parameters,
-        onSuccess: resolve,
-        onFailure: (res) => reject(new Error(JSON.stringify(res)))
+        onSuccess: res, onFailure: r => rej(new Error(JSON.stringify(r)))
       });
     })
   ]);
 }
 
-function showError(msg) {
-  const err = document.getElementById("errorMsg");
-  err.innerText = msg;
+function setButtonLabel(state) {
+  const btn = document.getElementById('cbtn');
+  btn.innerText = state === "CONNECTED" ? "Stop" : "Connect";
 }
+function setButtonDisabled(dis) { document.getElementById('cbtn').disabled = dis; }
+function setDropdownDisabled(dis) { document.getElementById('configDropdown').disabled = dis; }
 
-function startPolling() {
-  if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(getState, 3000);
+function updateStateLabel(text, cls) {
+  const s = document.getElementById('state');
+  s.className = '';
+  if (cls) s.classList.add(cls);
+  s.innerText = text;
 }
+function setDebug(msg) { document.getElementById('debugInfo').innerText = msg; }
+function extendDebug(msg) { document.getElementById('debugInfo').innerText = document.getElementById('debugInfo').innerText + "\n" + msg; }
+function showError(msg) { document.getElementById('errorMsg').innerText = msg; }
 
-function stopPolling() {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
-  }
-}
+function startPoll() { if (poll) clearInterval(poll); poll = setInterval(getState, 3000); }
+function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
 
-async function btnClicked() {
-  const btn = document.getElementById("cbtn");
-  btn.disabled = true;
-  showError("");
-
-  if (curState === "CONNECTED") {
-    await stopVpn();
-  } else {
-    await connect();
-  }
-  btn.disabled = false;
-}
-
-async function connect() {
-  document.getElementById("cbtn").innerText = "Connecting...";
+async function getState(retries = 3) {
   try {
-    await startVPN();
-    startPolling();
-  } catch (e) {
-    showError("Connection failed: " + e.message);
-    document.getElementById("cbtn").innerText = "Connect";
-  }
-}
-
-async function stopVpn() {
-  document.getElementById("cbtn").innerText = "Stopping...";
-  try {
-    await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
-      command: '{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 7505'
-    });
-    setTimeout(getState, 3000);
-  } catch (e) {
-    showError("Stop failed: " + e.message);
-  } finally {
-    document.getElementById("cbtn").innerText = "Connect";
-  }
-}
-
-async function getState() {
-  try {
-    const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
-      command: '{ echo "state"; sleep 1s; echo "exit";} | nc 127.0.0.1 7505'
-    });
-    const output = r.stdoutString || "";
-    if (output.includes("CONNECTED")) {
-      curState = "CONNECTED";
-      document.getElementById("cbtn").innerText = "Stop";
-      document.getElementById("state").innerText = "CONNECTED";
-      stopPolling();
+    const r = await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "state"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
+    const out = r.stdoutString || '';
+    extendDebug(out);
+    if (out.includes('CONNECTED')) {
+      curState = 'CONNECTED';
+      updateStateLabel('CONNECTED', 'connected');
+      setButtonLabel(curState);
+      setButtonDisabled(false);
+      setDropdownDisabled(true);
+      stopPoll();
     } else {
-      curState = "CONNECTING";
-      document.getElementById("cbtn").innerText = "Connecting...";
-      document.getElementById("state").innerText = "CONNECTING...";
+      curState = 'DISCONNECTED';
+      updateStateLabel('DISCONNECTED', 'disconnected');
+      setButtonLabel(curState);
+      setButtonDisabled(false);
+      setDropdownDisabled(false);
     }
   } catch (e) {
-    curState = "DISCONNECTED";
-    document.getElementById("cbtn").innerText = "Connect";
-    document.getElementById("state").innerText = "DISCONNECTED";
+    if (retries > 0) { setTimeout(() => getState(retries - 1), 1500); }
+    else {
+      curState = 'DISCONNECTED';
+      updateStateLabel('DISCONNECTED', 'disconnected');
+      setButtonLabel(curState);
+      setButtonDisabled(false);
+      setDropdownDisabled(false);
+      extendDebug(e.message);
+    }
   }
-}
-
-async function startVPN() {
-  const e = document.getElementById("configDropdown");
-  const value = e.value;
-  if (!value) {
-    throw new Error("Kein Profil ausgewählt");
-  }
-  await lunaCall("luna://org.webosbrew.hbchannel.service/spawn", {
-    command: "/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 0.0.0.0 7505 --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/" + value + " --daemon"
-  });
 }
 
 async function loadProfiles() {
   const dropdown = document.getElementById("configDropdown");
   dropdown.innerHTML = "";
-
   try {
     const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
       command:
         "cd /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles && ls -1 *.ovpn 2>/dev/null"
     });
-
     const files = (r.stdoutString || "")
       .split(/\r?\n/)
       .map((f) => f.trim())
@@ -164,11 +97,13 @@ async function loadProfiles() {
       emptyOption.value = "";
       emptyOption.textContent = "Keine Profile gefunden";
       dropdown.appendChild(emptyOption);
-      dropdown.disabled = true;
+      setDropdownDisabled(true);
+      setButtonDisabled(true);
       return;
     }
 
-    dropdown.disabled = false;
+    setDropdownDisabled(false);
+    setButtonDisabled(false);
     files.forEach((file) => {
       const option = document.createElement("option");
       option.value = file;
@@ -176,30 +111,65 @@ async function loadProfiles() {
       dropdown.appendChild(option);
     });
   } catch (e) {
-    dropdown.disabled = true;
-    showError("Profile konnten nicht geladen werden: " + e.message);
+    setDropdownDisabled(true);
+    setButtonDisabled(true);
+    showError("Profile could not be loaded: " + e.message);
   }
 }
+
+async function connect() {
+  const cfg = document.getElementById('configDropdown').value;
+  if (!value) {
+    showError('No Profile found');
+    return;
+  }
+  setButtonDisabled(true);
+  setDropdownDisabled(true);
+  setDebug('Launching OpenVPN with ' + cfg);
+  try {
+    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 0.0.0.0 ${mgmtPort} --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/${cfg} --daemon` });
+    startPoll();
+  } catch (e) {
+    showError('Start failed ' + e.message);
+    setButtonDisabled(false);
+    setDropdownDisabled(false);
+  }
+}
+async function disconnect() {
+  setButtonDisabled(true);
+  setDropdownDisabled(true);
+  setDebug('Sending SIGTERM...');
+  try {
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
+    setTimeout(getState, 2500);
+  } catch (e) {
+    showError('Stop failed ' + e.message); setButtonDisabled(false);
+    setDropdownDisabled(false);
+  }
+}
+function btnClick() { curState === 'CONNECTED' ? disconnect() : connect(); }
 
 async function initVPN() {
-  try {
-    await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
-      command: "chmod +x /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn"
-    });
-  } catch (e) {
-    showError("Init failed: " + e.message);
-  }
-  await getState();
+  setDebug('Init +x on openvpn...');
+  await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
+    command: 'chmod +x /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn'
+  });
+  extendDebug('Checking management interface…');
+  await getState(1);
 }
 
-window.addEventListener("load", () => {
-  SpatialNavigation.init();
-  SpatialNavigation.add({ selector: ".item" });
-  SpatialNavigation.makeFocusable();
-  eventRegister.addEventListeners();
-  document.getElementById("cbtn").addEventListener("click", btnClicked);
-  loadProfiles().then(initVPN);
+window.addEventListener('beforeunload', () => {
+  polling = false;           // stop Promise-Loop
+  stopPoll();                // falls setInterval-Backup
+});
 
-  document.addEventListener("webOSLaunch", getState, true);
-  document.addEventListener("webOSRelaunch", getState, true);
+window.addEventListener('load', () => {
+  SpatialNavigation.init();
+  SpatialNavigation.add({ selector: '.item' });
+  SpatialNavigation.makeFocusable();
+  eventRegister.add();
+  document.getElementById('cbtn').addEventListener('click', btnClick);
+  loadProfiles().then(initVPN);
+  document.addEventListener('webOSLaunch', () => getState(5), true);
+  document.addEventListener('webOSRelaunch', () => getState(5), true);
 });

@@ -1,55 +1,93 @@
-body {
-  background-color: #121212;
-  color: #e0e0e0;
-  font-family: Arial, Helvetica, sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  margin: 0;
-}
 
-.container {
-  background: #1e1e1e;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  text-align: center;
+/* Base */
+html{
+  font-size: 42px;
+  font-family: "Segoe UI", sans-serif;
+  color:#222;
 }
-
-h1 {
-  margin-bottom: 1rem;
+body{
+  background:#f2f2f2;
+  margin:0;
+  text-align:center;
 }
-
-.status-container, .config-container {
-  margin: 1rem 0;
+h1{
+  font-size:1.4em;
+  color:#009688;
+  margin:0.4em 0 0.2em;
 }
-
-.status-text {
-  font-weight: bold;
-  margin-left: 0.5rem;
+hr{
+  width:80%;
+  border:0;
+  height:4px;
+  background:#b0bec5;
+  margin:1em auto;
 }
-
-.button-3 {
-  background-color: #2ea44f;
-  color: #fff;
-  padding: 0.75rem 2rem;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
+/* Config row */
+.config-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  gap:0.6em;
+  margin:1em auto;
 }
-
-.button-3:hover {
-  background-color: #2c974b;
+.config-row select{
+  font-size:1em;
+  padding:0.3em 0.6em;
+  margin-right: 0.3em;
+  border-radius:0.2em;
+  background:#fff;
+  border:2px solid #009688;
+  min-width:460px;
 }
-
-.button-3:disabled {
-  background-color: #94d3a2;
-  cursor: not-allowed;
+.btn-primary{
+  font-size:1em;
+  font-weight:bold;
+  padding:0.35em 1em;
+  background:#009688;
+  color:#fff;
+  border:none;
+  border-radius:0.25em;
+  min-width:300px;
 }
-
-.error-message {
-  margin-top: 1rem;
-  color: #ff5f5f;
+.btn-primary:disabled{
+  background:#80cbc4;
+  color:#eee;
+  cursor:not-allowed;
+  opacity:0.6;
+}
+.item:focus{
+  outline:6px solid #ffeb3b;
+  outline-offset:4px;
+}
+/* Status & debug */
+#statusBlock{
+  font-size:1.1em;
+  margin-bottom:0.5em;
+}
+#state{
+  font-weight:bold;
+  margin-left:0.3em;
+}
+.connected{color:#2e7d32;}
+.connecting{color:#f9a825;}
+.disconnected{color:#c62828;}
+#debugInfo{
+  background:#eceff1;
+  color:#37474f;
+  text-align:left;
+  font-size:0.6em;
+  padding:0.4em;
+  width:90%;
+  max-height:25vh;
+  margin:0.5em auto;
+  overflow:auto;
+  border-radius:0.2em;
+}
+#errorMsg{
+  font-size:0.8em;
+  color:#c62828;
+  word-wrap:break-word;
+  width:90%;
+  margin:0.3em auto;
 }
