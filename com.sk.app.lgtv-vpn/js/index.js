@@ -33,10 +33,12 @@ function setButtonLabel(state) {
   const btn = document.getElementById('cbtn');
   btn.innerText = state === "CONNECTED" ? "Stop" : "Connect";
 }
-function setButtonDisabled(dis) { document.getElementById('cbtn').disabled = dis; }
-function setDropdownDisabled(dis) { document.getElementById('configDropdown').disabled = dis; }
+function setButtonDisabled(dis) { document.getElementById('cbtn').disabled = dis; 
+  SpatialNavigation.makeFocusable();}
+function setDropdownDisabled(dis) { document.getElementById('configDropdown').disabled = dis; 
+  SpatialNavigation.makeFocusable();}
 
-function updateStateLabel(text, cls) {
+function updateStateLabel(text, cls = null) {
   const s = document.getElementById('state');
   s.className = '';
   if (cls) s.classList.add(cls);
@@ -46,9 +48,6 @@ function setDebug(msg) { document.getElementById('debugInfo').innerText = msg; }
 function extendDebug(msg) { document.getElementById('debugInfo').innerText = document.getElementById('debugInfo').innerText + "\n" + msg; }
 function showError(msg) { document.getElementById('errorMsg').innerText = msg; }
 
-function startPoll() { if (poll) clearInterval(poll); poll = setInterval(getState, 3000); }
-function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
-
 async function terminateDaemon() {
   try {
     await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
@@ -57,25 +56,22 @@ async function terminateDaemon() {
   }
 }
 
-function cleanup() { stopPoll(); }
-
-function closeCleanup() {
-  cleanup();
-  terminateDaemon();
-}
-
-async function getState(retries = 3) {
+async function getState(retries = 3, canfail = false) {
   try {
+    updateStateLabel('Checking...');
+    showError("");
     const r = await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "state"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` });
     const out = r.stdoutString || '';
-    extendDebug(out);
+    setDebug(out);
     if (out.includes('CONNECTED')) {
       curState = 'CONNECTED';
       updateStateLabel('CONNECTED', 'connected');
       setButtonLabel(curState);
       setButtonDisabled(false);
       setDropdownDisabled(true);
-      stopPoll();
+    } else if (out.includes('WAIT')) {
+      setTimeout((retries, canfail) => {console.log('state from retry wait'); getState(retries - 1, canfail)}, 1500, retries, canfail); 
+      extendDebug('VPN is connecting, retrying state check...');
     } else {
       curState = 'DISCONNECTED';
       updateStateLabel('DISCONNECTED', 'disconnected');
@@ -84,14 +80,23 @@ async function getState(retries = 3) {
       setDropdownDisabled(false);
     }
   } catch (e) {
-    if (retries > 0) { setTimeout(() => getState(retries - 1), 1500); }
+    if (retries > 0) { 
+      setTimeout((retries, canfail) => {console.log('state from retry'); getState(retries - 1, canfail)}, 1500,retries, canfail); 
+      if(!canfail){
+        extendDebug(`VPN not responding, retrying state check (${retries} attempts left)...`);
+      }
+    }
     else {
       curState = 'DISCONNECTED';
       updateStateLabel('DISCONNECTED', 'disconnected');
       setButtonLabel(curState);
       setButtonDisabled(false);
       setDropdownDisabled(false);
-      extendDebug(e.message);
+      if(!canfail)
+      {
+        setDebug(e.message);
+        showError('Could not connect to management interface.');
+      }
     }
   }
 }
@@ -102,8 +107,8 @@ async function loadProfiles() {
   try {
     const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
       command:
-        "cd /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles && ls -1 *.ovpn 2>/dev/null"
-    });
+        `cd /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles && ls -1 *.ovpn`
+    },timeout=15000);
     const files = (r.stdoutString || "")
       .split(/\r?\n/)
       .map((f) => f.trim())
@@ -116,21 +121,23 @@ async function loadProfiles() {
       dropdown.appendChild(emptyOption);
       setDropdownDisabled(true);
       setButtonDisabled(true);
-      return;
+      showError("No Profiles found in profiles folder. Please make sure to upload .ovpn files into /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles");
+      return Promise.reject("No Profiles found");
     }
 
-    setDropdownDisabled(false);
-    setButtonDisabled(false);
     files.forEach((file) => {
       const option = document.createElement("option");
       option.value = file;
       option.textContent = file.replace(/\.ovpn$/i, "");
       dropdown.appendChild(option);
     });
+    extendDebug(`Loaded ${files.length} profile(s).`);
+    return Promise.resolve();
   } catch (e) {
     setDropdownDisabled(true);
     setButtonDisabled(true);
-    showError("Profile could not be loaded: " + e.message);
+    showError("Profiles could not be loaded: " + e.message);
+    return Promise.resolve(e); //still resolve, maybe management interface is still up
   }
 }
 
@@ -140,25 +147,32 @@ async function connect() {
     showError('No Profile found');
     return;
   }
+  showError('');
   setButtonDisabled(true);
   setDropdownDisabled(true);
   setDebug('Launching OpenVPN with ' + cfg);
   try {
     await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 0.0.0.0 ${mgmtPort} --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/${cfg} --daemon` });
-    startPoll();
+    console.log('state from connect');
+    setTimeout(getState,2000);
   } catch (e) {
+    setDebug(e.message);
     showError('Start failed ' + e.message);
     setButtonDisabled(false);
     setDropdownDisabled(false);
   }
 }
 async function disconnect() {
+  showError('');
   setButtonDisabled(true);
   setDropdownDisabled(true);
   setDebug('Sending SIGTERM...');
   try {
     await terminateDaemon();
-    setTimeout(getState, 2500);
+    setTimeout(() => {
+      console.log('state from disconnect');
+      getState(1, true);
+    }, 2000);
   } catch (e) {
     showError('Stop failed ' + e.message); setButtonDisabled(false);
     setDropdownDisabled(false);
@@ -167,17 +181,16 @@ async function disconnect() {
 function btnClick() { curState === 'CONNECTED' ? disconnect() : connect(); }
 
 async function initVPN() {
-  setDebug('Init +x on openvpn...');
+  extendDebug('Preparing openvpn binary...');
   await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
     command: 'chmod +x /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn'
   });
   extendDebug('Checking management interface…');
-  await getState(1);
-}
-
-function resumeStateSync() {
-  getState(3);
-  startPoll();
+  console.log('state from initVPN');
+  await getState(1, true);
+  extendDebug('Initialization complete.');
+  setDropdownDisabled(false);
+  setButtonDisabled(false);
 }
 
 function configureVisibilityHandling() {
@@ -194,27 +207,24 @@ function configureVisibilityHandling() {
 
   document.addEventListener(visibilityEvent, () => {
     const isHidden = document[visibilityProp];
-    if (isHidden) {
-      stopPoll();
-    } else {
-      resumeStateSync();
+    if (!isHidden) {
+      console.log('state from Hiddenlistener');
+      getState(1, true);
     }
   }, true);
 }
 
-window.addEventListener('beforeunload', closeCleanup, false);
-if (window.webOSSystem) {
-  window.webOSSystem.onclose = closeCleanup;
-}
-
-window.addEventListener('load', () => {
+function launchEvent() {
   SpatialNavigation.init();
   SpatialNavigation.add({ selector: '.item' });
   SpatialNavigation.makeFocusable();
   eventRegister.add();
   document.getElementById('cbtn').addEventListener('click', btnClick);
   configureVisibilityHandling();
-  loadProfiles().then(() => { initVPN().then(startPoll); });
-  document.addEventListener('webOSLaunch', resumeStateSync, true);
-  document.addEventListener('webOSRelaunch', resumeStateSync, true);
-});
+  setDebug('Loading Profiles, this could take some seconds...');
+  loadProfiles().then(() => { initVPN(); },()=>{setDebug('Failed to load profiles.');});
+}
+
+
+document.addEventListener('webOSLaunch', launchEvent, true);
+document.addEventListener('webOSRelaunch', launchEvent, true);
