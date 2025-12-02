@@ -13,7 +13,7 @@ A small LG webOS TV app that wraps an OpenVPN client so you can start and stop V
 ## Installation options
 ### Install a published IPK
 1. Download the latest `com.sk.app.lgtv-vpn_*.ipk` from the project releases.
-2. Install the IPK via `ares-install`.
+2. Install the IPK via `ares-install` or with the [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop).
 
 ### Build the IPK yourself
 1. Install the webOS TV CLI so you have access to `ares-package` and `ares-install`.
@@ -29,11 +29,11 @@ A small LG webOS TV app that wraps an OpenVPN client so you can start and stop V
 
 ## Provide your VPN profiles
 The app expects your OpenVPN profiles to live in `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles` on the TV:
-1. Copy your `.ovpn` files (and any referenced certificates/keys) into that folder.
+1. Copy your `.ovpn` files (and any referenced certificates/keys) into that folder (possible also with [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop).
 2. Launch the app and select the desired profile from the drop-down list, then press **Connect**.
 
 ## Requirements
-- An LG TV with webOS that has the Homebrew Channel installed and running.
+- An LG TV with webOS that has the Homebrew Channel with root installed and running.
 - Valid OpenVPN configuration files that work with your VPN provider.
 
 ## Stability and troubleshooting
