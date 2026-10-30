@@ -27,10 +27,29 @@ A small LG webOS TV app that wraps an OpenVPN client so you can start and stop V
    ares-install com.sk.app.lgtv-vpn_0.0.1_all.ipk
    ```
 
+### Install this checkout next to the released app
+With the SSH server enabled in the Homebrew Channel settings:
+```bash
+./install-to-tv.sh <tv-ip> [profile.ovpn ...]
+```
+This builds an IPK with the app id `com.sk.app.lgtv-vpn.dev` ("VPN (dev)") and installs it alongside the released app, so you can try changes without touching it. It reuses the released app's `openvpn` binary and copies its profiles on the first install. Running it again updates the dev app and keeps its profiles. Set `APP_ID` and `APP_TITLE` to use another id and name. No webOS SDK is needed.
+
+Both apps control OpenVPN through the same management port, so they see and control the same connection; only run one VPN at a time.
+
 ## Provide your VPN profiles
 The app expects your OpenVPN profiles to live in `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles` on the TV:
 1. Copy your `.ovpn` files (and any referenced certificates/keys) into that folder (possible also with [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop).
 2. Launch the app and select the desired profile from the drop-down list, then press **Connect**.
+
+If the app finds no profiles, it shows these steps along with a ready-to-paste `scp` command for your TV (enable the SSH server in the Homebrew Channel settings first). Press **Reload** after copying.
+
+Relative paths in a profile (`ca`, `cert`, `key`, `auth-user-pass` files) are resolved against the profiles folder.
+
+### Profiles that need a password
+If a profile asks for a username and password (`auth-user-pass`) or has an encrypted private key, the app shows a sign-in form when you connect. A wrong password brings the form back. To avoid typing on the TV, put the username and password on two lines in a file in the profiles folder and reference it from the profile:
+```
+auth-user-pass login.txt
+```
 
 ## Requirements
 - An LG TV with webOS that has the Homebrew Channel with root installed and running.
