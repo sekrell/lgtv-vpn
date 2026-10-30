@@ -119,8 +119,10 @@ function setDebug(msg) { document.getElementById('debugInfo').innerText = msg; s
 function extendDebug(msg) { document.getElementById('debugInfo').innerText = document.getElementById('debugInfo').innerText + "\n" + msg; scrollLog(); }
 function showError(msg) { document.getElementById('errorMsg').innerText = msg; }
 
-function showSetupHelp(show) {
+// closable: the help was opened from the dropdown, so profiles exist and it can be closed again.
+function showSetupHelp(show, closable = false) {
   document.getElementById('setupCard').hidden = !show;
+  document.getElementById('setupClose').hidden = !closable;
   SpatialNavigation.makeFocusable();
 }
 
@@ -288,8 +290,29 @@ async function getState(retries = 3, canfail = false) {
   }
 }
 
+// The last dropdown entry opens the "add a profile" help instead of selecting a profile.
+const addProfileValue = '__add_profile__';
+let selectedProfile = '';
+
 function hasProfiles() {
-  return document.getElementById('configDropdown').value !== '';
+  const value = document.getElementById('configDropdown').value;
+  return value !== '' && value !== addProfileValue;
+}
+
+function profileChanged() {
+  const dropdown = document.getElementById('configDropdown');
+  if (dropdown.value !== addProfileValue) {
+    selectedProfile = dropdown.value;
+    return;
+  }
+  dropdown.value = selectedProfile;
+  showSetupHelp(true, true);
+  document.getElementById('setupClose').focus();
+}
+
+function closeSetupHelp() {
+  showSetupHelp(false);
+  document.getElementById('configDropdown').focus();
 }
 
 async function loadProfiles() {
@@ -326,7 +349,12 @@ async function loadProfiles() {
       option.textContent = file.replace(/\.ovpn$/i, "");
       dropdown.appendChild(option);
     });
+    const addOption = document.createElement("option");
+    addOption.value = addProfileValue;
+    addOption.textContent = "+ Add a profile…";
+    dropdown.appendChild(addOption);
     if (files.includes(previous)) dropdown.value = previous;
+    selectedProfile = dropdown.value;
     showSetupHelp(false);
     showError("");
     if (curState !== 'CONNECTED') {
@@ -426,6 +454,8 @@ function launchEvent() {
     document.getElementById('logBtn').addEventListener('click', toggleLog);
     document.getElementById('authSubmit').addEventListener('click', submitAuth);
     document.getElementById('authCancel').addEventListener('click', cancelAuth);
+    document.getElementById('configDropdown').addEventListener('change', profileChanged);
+    document.getElementById('setupClose').addEventListener('click', closeSetupHelp);
   }
   loadTvAddress();
   initVPN().then(() => {

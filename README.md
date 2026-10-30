@@ -18,7 +18,7 @@ The screen fits on the TV without scrolling and is navigated with the remote's a
 - **Profile** (below the status): pick a profile, then press **Connect**; the button turns into a red **Disconnect** while the VPN is up. **Reload** re-reads the profiles folder, so new profiles show up without restarting the app.
 - **Sign-in** (in place of the profile row): appears when a profile asks for a username and password or a key passphrase. See [Profiles that need a password](#profiles-that-need-a-password).
 - **Log** (bottom left): OpenVPN and app messages, newest at the bottom. **Hide log** folds it away.
-- **Add a VPN profile** (right): shown only while no profiles are found. It lists the setup steps with a ready-to-paste `scp` command that includes the TV's IP address and profiles folder.
+- **Add a VPN profile** (right): shown while no profiles are found, or when you pick **+ Add a profile…** at the end of the profile list (press **Close** to hide it again). It lists the setup steps with a ready-to-paste `scp` command that includes the TV's IP address and profiles folder.
 - **Theme** (top right): cycles through Dark, Light, Midnight and OLED Black. The choice is remembered.
 
 

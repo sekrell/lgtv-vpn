@@ -307,6 +307,11 @@ button:disabled{
 #errorMsg:not(:empty){ margin-top:0.4em; }
 
 /* Setup help */
+.setup-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+}
 .steps{
   margin:0.6em 0;
   padding-left:1.3em;
