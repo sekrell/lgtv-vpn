@@ -6,9 +6,12 @@
 APP_ID=$(basename "$(dirname "$(dirname "$0")")")
 PROFILE=$(basename "${config:-VPN}" .ovpn | tr -d '"\\')
 
+# $signal says why the tunnel went down. A deliberate stop is sigterm/sigint, or
+# exit-with-notification when the profile uses explicit-exit-notify (most UDP ones).
 case "$script_type:${signal:-}" in
   up:*) message="VPN connected: $PROFILE" ;;
-  down:sigterm | down:sigint) message="VPN disconnected" ;;
+  down:sigterm | down:sigint | down:exit-with-notification) message="VPN disconnected" ;;
+  down:ping-exit | down:inactive) message="VPN connection lost" ;;
   down:*) message="VPN connection lost. Reconnecting…" ;;
   *) exit 0 ;;
 esac
