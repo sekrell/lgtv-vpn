@@ -1,7 +1,7 @@
 # lgtv-vpn
 A small LG webOS TV app that wraps an OpenVPN client so you can start and stop VPN connections directly from your TV without an external router or device.
 
-<img width="1920" height="1080" alt="The app connected to a VPN profile (name and addresses blurred): green locked shield, Connected status, Disconnect button, log, and the Notifications, Block IPv6 and Theme switches in the top bar" src="docs/screenshot.png" />
+<img width="1920" height="1080" alt="The app connected to a VPN profile (name and addresses blurred): green locked shield, Connected status, Disconnect button, log, and the Notifications, Block IPv6, VPN DNS and Theme switches in the top bar" src="docs/screenshot.png" />
 
 ## What the app does
 - Uses the bundled OpenVPN binary to start a VPN connection on your LG TV.
@@ -9,8 +9,9 @@ A small LG webOS TV app that wraps an OpenVPN client so you can start and stop V
 - Provides an on-device UI built for the remote to connect, disconnect, and view connection status.
 - The VPN connection is kept even when switching apps. So Youtube / Netflix etc. is also running through the VPN connection.
 - Shows a TV notification when the VPN connects, disconnects, or loses its connection and reconnects, even while you're in another app. OpenVPN runs `res/vpn-hook.sh` for this (`--up`/`--down`).
-- Blocks IPv6 while the VPN is up, so apps like YouTube and Netflix cannot go around an IPv4-only VPN; it is restored on disconnect. DNS still uses the TV's normal servers.
-- Both can be switched off with **Notifications** and **Block IPv6** in the top bar; changes apply right away, even while connected.
+- Blocks IPv6 while the VPN is up, so apps like YouTube and Netflix cannot go around an IPv4-only VPN; it is restored on disconnect.
+- Uses the DNS servers the VPN pushes while it is up. The TV's own resolver otherwise keeps asking your router, outside the tunnel, which reveals what you look up and can make streaming services pick servers for your real location. The hook points `/etc/resolv.conf` at the VPN's servers and restores it on disconnect.
+- Each can be switched off with **Notifications**, **Block IPv6** and **VPN DNS** in the top bar; changes apply right away, even while connected.
 
 ## Using the app
 The screen fits on the TV without scrolling and is navigated with the remote's arrow keys and OK button.
@@ -21,7 +22,7 @@ The screen fits on the TV without scrolling and is navigated with the remote's a
 - **Sign-in** (in place of the profile row): appears when a profile asks for a username and password or a key passphrase. See [Profiles that need a password](#profiles-that-need-a-password).
 - **Log** (bottom left): OpenVPN and app messages, newest at the bottom. **Hide log** folds it away.
 - **Add a VPN profile** (right): shown while no profiles are found, or when you pick **+ Add a profile…** at the end of the profile list (press **Close** to hide it again). It lists the setup steps with a ready-to-paste `scp` command that includes the TV's IP address and profiles folder.
-- **Notifications / Block IPv6** (top right): turn the connect/disconnect notifications and the IPv6 block on or off. Both start on.
+- **Notifications / Block IPv6 / VPN DNS** (top right): turn the connect/disconnect notifications, the IPv6 block and the VPN's DNS servers on or off. All start on.
 - **Theme** (top right): cycles through Dark, Light, Midnight and OLED Black. The choice is remembered.
 
 

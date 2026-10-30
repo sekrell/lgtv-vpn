@@ -78,8 +78,8 @@ function toggleLog() { setLogVisible(document.getElementById('debugBlock').hidde
 
 // Switches for res/vpn-hook.sh. The hook runs as root outside the app, so the app
 // writes them to a file it reads; both default to on.
-const hookSettings = { NOTIFY: 'Notifications', BLOCK_IPV6: 'Block IPv6' };
-const hookButtons = { NOTIFY: 'notifyBtn', BLOCK_IPV6: 'ipv6Btn' };
+const hookSettings = { NOTIFY: 'Notifications', BLOCK_IPV6: 'Block IPv6', VPN_DNS: 'VPN DNS' };
+const hookButtons = { NOTIFY: 'notifyBtn', BLOCK_IPV6: 'ipv6Btn', VPN_DNS: 'dnsBtn' };
 
 function hookSettingOn(key) { return storageGet('hook.' + key) !== '0'; }
 
@@ -89,12 +89,12 @@ function renderHookSettings() {
   }
 }
 
-// Writes hook-settings and makes the IPv6 block match it right away, even while connected.
+// Writes hook-settings and makes the IPv6 block and DNS match it right away, even while connected.
 async function applyHookSettings() {
   const lines = Object.keys(hookSettings).map(key => `${key}=${hookSettingOn(key) ? 1 : 0}`).join('\\n');
   try {
     await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
-      command: `printf '${lines}\\n' > ${appDir}/hook-settings && ${appDir}/res/vpn-hook.sh apply-ipv6`
+      command: `printf '${lines}\\n' > ${appDir}/hook-settings && ${appDir}/res/vpn-hook.sh apply`
     });
   } catch (e) {
     extendDebug(`Saving settings failed: ${e.message}`);
@@ -495,6 +495,7 @@ function launchEvent() {
     document.getElementById('logBtn').addEventListener('click', toggleLog);
     document.getElementById('notifyBtn').addEventListener('click', () => toggleHookSetting('NOTIFY'));
     document.getElementById('ipv6Btn').addEventListener('click', () => toggleHookSetting('BLOCK_IPV6'));
+    document.getElementById('dnsBtn').addEventListener('click', () => toggleHookSetting('VPN_DNS'));
     document.getElementById('authSubmit').addEventListener('click', submitAuth);
     document.getElementById('authCancel').addEventListener('click', cancelAuth);
     document.getElementById('configDropdown').addEventListener('change', profileChanged);
