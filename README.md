@@ -62,16 +62,21 @@ If the app finds no profiles, it shows these steps along with a ready-to-paste `
 Relative paths in a profile (`ca`, `cert`, `key`, `auth-user-pass` files) are resolved against the profiles folder.
 
 ### Profiles that need a password
-If a profile asks for a username and password (`auth-user-pass`) or has an encrypted private key, the app shows a sign-in form when you connect. A wrong password brings the form back. To avoid typing on the TV, put the username and password on two lines in a file in the profiles folder and reference it from the profile:
+If a profile asks for a username and password (`auth-user-pass`) or has an encrypted private key, the app shows a sign-in form when you connect. A wrong password brings the form back. To avoid typing on the TV, put the login in a plain text file in the profiles folder and reference it from the profile:
 ```
 auth-user-pass login.txt
+```
+The file has exactly two lines, the username first and the password second, with nothing else around them (no labels or quotes):
+```
+my-vpn-username
+my-vpn-password
 ```
 
 `copy-login.sh` does this for a profile that is already on the TV:
 ```bash
 ./copy-login.sh <tv-ip> my-vpn.ovpn [login.txt]
 ```
-Without `login.txt` it asks for the username and password and sends them straight to the TV, so they aren't saved on your computer. The login is stored next to the profile as `my-vpn.login`, readable by root only, and the profile's `auth-user-pass` line is pointed at it. Some providers (NordVPN, for example) use separate "service credentials" for this rather than your account login.
+`login.txt` uses the two-line format above. Without it, the script asks for the username and password and sends them straight to the TV, so they aren't saved on your computer. The login is stored next to the profile as `my-vpn.login`, readable by root only, and the profile's `auth-user-pass` line is pointed at it. Some providers (NordVPN, for example) use separate "service credentials" for this rather than your account login.
 
 ## Requirements
 - An LG TV with webOS that has the Homebrew Channel with root installed and running.
