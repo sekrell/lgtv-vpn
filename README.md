@@ -67,6 +67,12 @@ If a profile asks for a username and password (`auth-user-pass`) or has an encry
 auth-user-pass login.txt
 ```
 
+`copy-login.sh` does this for a profile that is already on the TV:
+```bash
+./copy-login.sh <tv-ip> my-vpn.ovpn [login.txt]
+```
+Without `login.txt` it asks for the username and password and sends them straight to the TV, so they aren't saved on your computer. The login is stored next to the profile as `my-vpn.login`, readable by root only, and the profile's `auth-user-pass` line is pointed at it. Some providers (NordVPN, for example) use separate "service credentials" for this rather than your account login.
+
 ## Requirements
 - An LG TV with webOS that has the Homebrew Channel with root installed and running.
 - Valid OpenVPN configuration files that work with your VPN provider.
