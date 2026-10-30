@@ -422,6 +422,11 @@ async function connect() {
     // --up/--down (after --config, so they win): res/vpn-hook.sh shows a TV toast and blocks IPv6 while
     // connected, also around reconnects (--up-restart).
     const hook = `${appDir}/res/vpn-hook.sh`;
+    // Profiles and stored logins are secrets, but webOS can reset the app folder to world-readable
+    // (seen after a reboot), so lock the folder down again before every connect.
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
+      command: `chmod 700 ${profilesDir} && chmod -R go-rwx ${profilesDir}`
+    }).catch(e => extendDebug(`Could not restrict the profiles folder: ${e.message}`));
     await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 0.0.0.0 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --script-security 2 --up ${hook} --down ${hook} --up-restart --daemon` });
     console.log('state from connect');
     setTimeout(getState,2000);
