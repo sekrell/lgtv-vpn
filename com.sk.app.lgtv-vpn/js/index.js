@@ -65,7 +65,7 @@ function showError(msg) { document.getElementById('errorMsg').innerText = msg; }
 
 async function terminateDaemon() {
   try {
-    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` },timeout=15000);
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` }, 15000);
   } catch (e) {
     extendDebug(`Cleanup stop failed: ${e.message}`);
   }
@@ -123,7 +123,7 @@ async function loadProfiles() {
     const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
       command:
         `cd /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles && ls -1 *.ovpn`
-    },timeout=15000);
+    },15000);
     const files = (r.stdoutString || "")
       .split(/\r?\n/)
       .map((f) => f.trim())
@@ -167,7 +167,7 @@ async function connect() {
   setDropdownDisabled(true);
   setDebug('Launching OpenVPN with ' + cfg);
   try {
-    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 0.0.0.0 ${mgmtPort} --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/${cfg} --daemon` });
+    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/res/openvpn --management 127.0.0.1 ${mgmtPort} --config /media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles/${cfg} --daemon --log /tmp/openvpn.log --verb 1` });
     console.log('state from connect');
     setTimeout(getState,2000);
   } catch (e) {
