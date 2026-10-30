@@ -47,9 +47,16 @@ With the SSH server enabled in the Homebrew Channel settings:
 ```bash
 ./install-to-tv.sh <tv-ip> [profile.ovpn ...]
 ```
-This builds an IPK with the app id `com.sk.app.lgtv-vpn.dev` ("VPN (dev)") and installs it alongside the released app, so you can try changes without touching it. It reuses the released app's `openvpn` binary and copies its profiles on the first install. Running it again updates the dev app and keeps its profiles. Set `APP_ID` and `APP_TITLE` to use another id and name. No webOS SDK is needed.
+This builds an IPK with the app id `com.sk.app.lgtv-vpn.dev` ("VPN (dev)") and installs it alongside the released app, so you can try changes without touching it. It copies the released app's profiles on the first install. Running it again updates the dev app and keeps its profiles. Set `APP_ID` and `APP_TITLE` to use another id and name. No webOS SDK is needed.
 
 Both apps control OpenVPN through the same management port, so they see and control the same connection; only run one VPN at a time.
+
+### Build the OpenVPN binary
+`res/openvpn` is built from the official sources by a script, so it can be rebuilt and checked:
+```bash
+./build-openvpn.sh
+```
+It needs Podman or Docker and nothing else. In a pinned Alpine image it downloads OpenVPN, OpenSSL, LZO, LZ4 and libcap-ng, checks each against the SHA-256 pinned in `openvpn-build/build.sh`, and cross-compiles a static 32-bit ARMv7 binary with Zig's C compiler (musl, so it doesn't depend on the TV's libraries). The versions and the binary's own SHA-256 are written to `openvpn-build/BUILDINFO`; building again gives the same binary, so anyone can compare it with the one in the repo.
 
 ## Provide your VPN profiles
 The app expects your OpenVPN profiles to live in `/media/developer/apps/usr/palm/applications/com.sk.app.lgtv-vpn/profiles` on the TV:

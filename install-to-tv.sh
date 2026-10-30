@@ -8,8 +8,7 @@
 # shown as "$APP_TITLE", default "VPN (dev)") and installs it with the TV's app installer.
 # Running it again updates that app and keeps its profiles. On the first install it
 # copies the released app's profiles; any files given after the IP are added too.
-# The openvpn binary is taken from the released app when it is installed, since
-# res/openvpn in this checkout is a different (dynamically linked) build.
+# It installs res/openvpn from this checkout, built by build-openvpn.sh.
 #
 # Environment: APP_ID, APP_TITLE, TV_USER (default root), TV_PORT (default 22).
 set -eu
@@ -21,7 +20,7 @@ APPS=/media/developer/apps/usr/palm/applications
 SRC_DIR=$(cd "$(dirname "$0")/$SRC_ID" && pwd)
 
 if [ $# -lt 1 ]; then
-  sed -n '2,15s/^# \{0,1\}//p' "$0"
+  sed -n '2,14s/^# \{0,1\}//p' "$0"
   exit 1
 fi
 TV=$1
@@ -57,12 +56,6 @@ VERSION=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$APP/appinfo.json")
 printf '{\n  "id": "%s",\n  "version": "%s",\n  "app": "%s"\n}\n' "$APP_ID" "$VERSION" "$APP_ID" \
   > "$DATA/usr/palm/packages/$APP_ID/packageinfo.json"
 
-if tv "test -f $APPS/$SRC_ID/res/openvpn"; then
-  echo "Using the openvpn binary from the installed $SRC_ID..."
-  tv "cat $APPS/$SRC_ID/res/openvpn" > "$APP/res/openvpn"
-else
-  echo "Warning: $SRC_ID isn't installed; using res/openvpn from this checkout." >&2
-fi
 chmod 755 "$APP/res/openvpn"
 
 # Package it the way ares-package does: an ar archive of debian-binary,
