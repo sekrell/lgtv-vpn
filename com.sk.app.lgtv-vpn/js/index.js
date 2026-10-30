@@ -107,6 +107,7 @@ function setDropdownDisabled(dis) { document.getElementById('configDropdown').di
 function updateStateLabel(text, cls = null) {
   const block = document.getElementById('statusBlock');
   block.className = 'status' + (cls ? ' ' + cls : '');
+  document.body.setAttribute('data-vpn', cls || '');
   const [label, detail] = stateLabels[text] || [text, ''];
   document.getElementById('state').innerText = label;
   document.getElementById('stateDetail').innerText = detail;
@@ -358,7 +359,9 @@ async function connect() {
     // --management-query-passwords: OpenVPN asks the app for logins instead of reading a terminal it doesn't have.
     // --auth-retry interact: ask again after a wrong password instead of exiting.
     // --cd: relative paths in the profile (ca, cert, auth-user-pass files) resolve against the profiles folder.
-    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 0.0.0.0 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --daemon` });
+    // --up/--down (after --config, so they win): res/notify.sh shows a TV toast, also on reconnects (--up-restart).
+    const hook = `${appDir}/res/notify.sh`;
+    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 0.0.0.0 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --script-security 2 --up ${hook} --down ${hook} --up-restart --daemon` });
     console.log('state from connect');
     setTimeout(getState,2000);
   } catch (e) {
@@ -398,7 +401,7 @@ async function initVPN() {
   setDebug('Preparing openvpn binary...');
   try {
     await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
-      command: `chmod +x ${appDir}/res/openvpn`
+      command: `chmod +x ${appDir}/res/openvpn ${appDir}/res/notify.sh`
     });
   } catch (e) {
     extendDebug(`Failed to set executable flag: ${e.message}`);

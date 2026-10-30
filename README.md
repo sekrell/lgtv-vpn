@@ -8,10 +8,12 @@ A small LG webOS TV app that wraps an OpenVPN client so you can start and stop V
 - Talks to the Homebrew Channel service to run OpenVPN in the background and manage its lifecycle.
 - Provides an on-device UI built for the remote to connect, disconnect, and view connection status.
 - The VPN connection is kept even when switching apps. So Youtube / Netflix etc. is also running through the VPN connection.
+- Shows a TV notification when the VPN connects, disconnects, or loses its connection and reconnects, even while you're in another app. OpenVPN runs `res/notify.sh` for this (`--up`/`--down`).
 
 ## Using the app
 The screen fits on the TV without scrolling and is navigated with the remote's arrow keys and OK button.
 
+- **Shield** (next to the title): green with a closed padlock while connected, amber while connecting, grey with an open padlock otherwise.
 - **Status** (top left): a colored dot and label show Connected (green), Connecting… (amber), Sign-in needed, or Disconnected (red).
 - **Profile** (below the status): pick a profile, then press **Connect**; the button turns into a red **Disconnect** while the VPN is up. **Reload** re-reads the profiles folder, so new profiles show up without restarting the app.
 - **Sign-in** (in place of the profile row): appears when a profile asks for a username and password or a key passphrase. See [Profiles that need a password](#profiles-that-need-a-password).

@@ -115,11 +115,27 @@ code{
   letter-spacing:0.01em;
 }
 .brand-icon{
-  width:1.3em;
-  height:1.3em;
+  width:1.4em;
+  height:1.4em;
   margin-right:0.4em;
-  fill:var(--accent);
 }
+/* The shield follows the VPN state (body[data-vpn], set by updateStateLabel). */
+.brand-icon .shield{
+  fill:var(--muted);
+  transition:fill 0.3s;
+}
+.brand-icon .lock-body{ fill:var(--bg); }
+.brand-icon .lock-shackle{
+  fill:none;
+  stroke:var(--bg);
+  stroke-width:1.6;
+  stroke-linecap:round;
+}
+.brand-icon .lock-shackle.closed{ display:none; }
+[data-vpn="connecting"] .brand-icon .shield{ fill:var(--warn); }
+[data-vpn="connected"] .brand-icon .shield{ fill:var(--ok); }
+[data-vpn="connected"] .brand-icon .lock-shackle.closed{ display:inline; }
+[data-vpn="connected"] .brand-icon .lock-shackle.open{ display:none; }
 .topbar-actions{
   display:flex;
   align-items:center;
