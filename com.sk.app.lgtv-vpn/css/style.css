@@ -145,6 +145,7 @@ code{
   font-size:0.85em;
   margin-right:1em;
 }
+.topbar-actions .btn-ghost + .btn-ghost{ margin-left:0.5em; }
 
 /* Cards */
 .layout{

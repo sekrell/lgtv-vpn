@@ -76,6 +76,38 @@ function setLogVisible(visible) {
 }
 function toggleLog() { setLogVisible(document.getElementById('debugBlock').hidden); }
 
+// Switches for res/vpn-hook.sh. The hook runs as root outside the app, so the app
+// writes them to a file it reads; both default to on.
+const hookSettings = { NOTIFY: 'Notifications', BLOCK_IPV6: 'Block IPv6' };
+const hookButtons = { NOTIFY: 'notifyBtn', BLOCK_IPV6: 'ipv6Btn' };
+
+function hookSettingOn(key) { return storageGet('hook.' + key) !== '0'; }
+
+function renderHookSettings() {
+  for (const key in hookSettings) {
+    document.getElementById(hookButtons[key]).innerText = `${hookSettings[key]}: ${hookSettingOn(key) ? 'On' : 'Off'}`;
+  }
+}
+
+// Writes hook-settings and makes the IPv6 block match it right away, even while connected.
+async function applyHookSettings() {
+  const lines = Object.keys(hookSettings).map(key => `${key}=${hookSettingOn(key) ? 1 : 0}`).join('\\n');
+  try {
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
+      command: `printf '${lines}\\n' > ${appDir}/hook-settings && ${appDir}/res/vpn-hook.sh apply-ipv6`
+    });
+  } catch (e) {
+    extendDebug(`Saving settings failed: ${e.message}`);
+  }
+}
+
+function toggleHookSetting(key) {
+  storageSet('hook.' + key, hookSettingOn(key) ? '0' : '1');
+  renderHookSettings();
+  extendDebug(`${hookSettings[key]} ${hookSettingOn(key) ? 'on' : 'off'}.`);
+  applyHookSettings();
+}
+
 function setButtonLabel(state) {
   const btn = document.getElementById('cbtn');
   btn.innerText = state === "CONNECTED" ? "Disconnect" : "Connect";
@@ -387,8 +419,9 @@ async function connect() {
     // --management-query-passwords: OpenVPN asks the app for logins instead of reading a terminal it doesn't have.
     // --auth-retry interact: ask again after a wrong password instead of exiting.
     // --cd: relative paths in the profile (ca, cert, auth-user-pass files) resolve against the profiles folder.
-    // --up/--down (after --config, so they win): res/notify.sh shows a TV toast, also on reconnects (--up-restart).
-    const hook = `${appDir}/res/notify.sh`;
+    // --up/--down (after --config, so they win): res/vpn-hook.sh shows a TV toast and blocks IPv6 while
+    // connected, also around reconnects (--up-restart).
+    const hook = `${appDir}/res/vpn-hook.sh`;
     await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 0.0.0.0 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --script-security 2 --up ${hook} --down ${hook} --up-restart --daemon` });
     console.log('state from connect');
     setTimeout(getState,2000);
@@ -429,7 +462,7 @@ async function initVPN() {
   setDebug('Preparing openvpn binary...');
   try {
     await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
-      command: `chmod +x ${appDir}/res/openvpn ${appDir}/res/notify.sh`
+      command: `chmod +x ${appDir}/res/openvpn ${appDir}/res/vpn-hook.sh`
     });
   } catch (e) {
     extendDebug(`Failed to set executable flag: ${e.message}`);
@@ -437,12 +470,15 @@ async function initVPN() {
   extendDebug('Checking management interface…');
   console.log('state from initVPN');
   await getState(1, true);
+  // Also lifts a leftover IPv6 block if OpenVPN died without running its down hook.
+  applyHookSettings();
 }
 
 function launchEvent() {
   if (!launched) {
     launched = true;
     setLogVisible(storageGet('logVisible') !== '0');
+    renderHookSettings();
     document.getElementById('profilesPath').innerText = profilesDir;
     SpatialNavigation.init();
     SpatialNavigation.add({ selector: '.item' });
@@ -452,6 +488,8 @@ function launchEvent() {
     document.getElementById('reloadBtn').addEventListener('click', reloadClick);
     document.getElementById('themeBtn').addEventListener('click', nextTheme);
     document.getElementById('logBtn').addEventListener('click', toggleLog);
+    document.getElementById('notifyBtn').addEventListener('click', () => toggleHookSetting('NOTIFY'));
+    document.getElementById('ipv6Btn').addEventListener('click', () => toggleHookSetting('BLOCK_IPV6'));
     document.getElementById('authSubmit').addEventListener('click', submitAuth);
     document.getElementById('authCancel').addEventListener('click', cancelAuth);
     document.getElementById('configDropdown').addEventListener('change', profileChanged);
