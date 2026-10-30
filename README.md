@@ -1,7 +1,7 @@
 # lgtv-vpn
 A small LG webOS TV app that wraps an OpenVPN client so you can start and stop VPN connections directly from your TV without an external router or device.
 
-<img width="1920" height="1080" alt="The app on a TV with no profiles yet: status and log on the left, setup steps with an scp command on the right" src="docs/screenshot.png" />
+<img width="1920" height="1080" alt="The app connected to a VPN profile (name and addresses blurred): green locked shield, Connected status, Disconnect button, log, and the Notifications, Block IPv6 and Theme switches in the top bar" src="docs/screenshot.png" />
 
 ## What the app does
 - Uses the bundled OpenVPN binary to start a VPN connection on your LG TV.
