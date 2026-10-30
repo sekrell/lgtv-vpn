@@ -294,9 +294,10 @@ button:disabled{
 .item:focus{
   outline:none;
   box-shadow:0 0 0 0.15em var(--bg), 0 0 0 0.3em var(--focus);
-  transform:scale(1.04);
 }
-.item.active{ transform:scale(0.98); }
+/* Only buttons grow on focus: a wide select or input would grow into its neighbours. */
+button.item:focus{ transform:scale(1.04); }
+button.item.active{ transform:scale(0.98); }
 
 #errorMsg{
   color:var(--err);
