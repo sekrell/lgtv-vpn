@@ -176,7 +176,7 @@ async function loadTvAddress() {
 
 async function terminateDaemon() {
   try {
-    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` },timeout=15000);
+    await lunaCall('luna://org.webosbrew.hbchannel.service/exec', { command: `{ echo "signal SIGTERM"; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}` }, 15000);
   } catch (e) {
     extendDebug(`Cleanup stop failed: ${e.message}`);
   }
@@ -248,7 +248,7 @@ async function submitAuth() {
   try {
     const r = await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
       command: `{ printf '%s\\n' ${lines.map(shQuote).join(' ')}; sleep 1s; echo "exit";} | nc 127.0.0.1 ${mgmtPort}`
-    }, timeout = 15000);
+    }, 15000);
     extendDebug(r.stdoutString || '');
     authSubmitted = true;
   } catch (e) {
@@ -356,7 +356,7 @@ async function loadProfiles() {
     const r = await lunaCall("luna://org.webosbrew.hbchannel.service/exec", {
       command:
         `mkdir -p ${profilesDir} && cd ${profilesDir} && ls -1 | grep -i '\\.ovpn$' || true`
-    },timeout=15000);
+    }, 15000);
     const files = (r.stdoutString || "")
       .split(/\r?\n/)
       .map((f) => f.trim())
@@ -427,7 +427,7 @@ async function connect() {
     await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
       command: `chmod 700 ${profilesDir} && chmod -R go-rwx ${profilesDir}`
     }).catch(e => extendDebug(`Could not restrict the profiles folder: ${e.message}`));
-    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 0.0.0.0 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --script-security 2 --up ${hook} --down ${hook} --up-restart --daemon` });
+    await lunaCall('luna://org.webosbrew.hbchannel.service/spawn', { command: `${appDir}/res/openvpn --management 127.0.0.1 ${mgmtPort} --management-query-passwords --auth-retry interact --cd ${profilesDir} --config ${profilesDir}/${cfg} --script-security 2 --up ${hook} --down ${hook} --up-restart --daemon` });
     console.log('state from connect');
     setTimeout(getState,2000);
   } catch (e) {
