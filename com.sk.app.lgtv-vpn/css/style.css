@@ -1,93 +1,359 @@
+/*
+ * Themes. Each theme only sets colors; layout below uses the variables.
+ * Avoid CSS newer than Chromium 68 (webOS 5): no flex `gap`, no `inset`, no `:focus-visible`.
+ */
+:root,
+[data-theme="dark"]{
+  --bg:#0f1418;
+  --bg-glow:rgba(0,150,136,0.18);
+  --surface:#182026;
+  --surface-2:#212b33;
+  --border:#2c3943;
+  --text:#e8eef2;
+  --muted:#93a4b0;
+  --accent:#26a69a;
+  --accent-text:#ffffff;
+  --ok:#4caf50;
+  --warn:#ffb300;
+  --err:#ef5350;
+  --focus:#ffd54f;
+  --code-bg:#0b0f12;
+}
+[data-theme="light"]{
+  --bg:#eef2f4;
+  --bg-glow:rgba(0,150,136,0.12);
+  --surface:#ffffff;
+  --surface-2:#f3f6f8;
+  --border:#d5dde2;
+  --text:#1b2328;
+  --muted:#5c6b75;
+  --accent:#00897b;
+  --accent-text:#ffffff;
+  --ok:#2e7d32;
+  --warn:#e08e00;
+  --err:#c62828;
+  --focus:#1565c0;
+  --code-bg:#e6ecef;
+}
+[data-theme="midnight"]{
+  --bg:#0b1020;
+  --bg-glow:rgba(99,102,241,0.22);
+  --surface:#131a33;
+  --surface-2:#1b2444;
+  --border:#2a3560;
+  --text:#e6e9ff;
+  --muted:#9aa3cc;
+  --accent:#6c7cff;
+  --accent-text:#ffffff;
+  --ok:#4ade80;
+  --warn:#fbbf24;
+  --err:#f87171;
+  --focus:#f0abfc;
+  --code-bg:#080c18;
+}
+[data-theme="oled"]{
+  --bg:#000000;
+  --bg-glow:rgba(0,0,0,0);
+  --surface:#0a0a0a;
+  --surface-2:#141414;
+  --border:#262626;
+  --text:#f5f5f5;
+  --muted:#8a8a8a;
+  --accent:#f5f5f5;
+  --accent-text:#000000;
+  --ok:#22c55e;
+  --warn:#eab308;
+  --err:#ef4444;
+  --focus:#38bdf8;
+  --code-bg:#000000;
+}
 
 /* Base */
 html{
-  font-size: 42px;
-  font-family: "Segoe UI", sans-serif;
-  color:#222;
+  font-size:28px;
+  font-family:"LG Smart UI", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color:var(--text);
+  background:var(--bg);
 }
+/* The page always fits the screen: a remote can't scroll it. */
 body{
-  background:#f2f2f2;
   margin:0;
-  text-align:center;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  padding:1.2em 2.4em;
+  box-sizing:border-box;
+  background:radial-gradient(ellipse at 15% 0%, var(--bg-glow), transparent 60%), var(--bg);
+  transition:background-color 0.2s, color 0.2s;
 }
-h1{
-  font-size:1.4em;
-  color:#009688;
-  margin:0.4em 0 0.2em;
+*,*::before,*::after{ box-sizing:inherit; }
+[hidden]{ display:none !important; }
+code,pre{ font-family:"DejaVu Sans Mono", Menlo, Consolas, monospace; }
+code{
+  font-size:0.9em;
+  background:var(--surface-2);
+  padding:0.05em 0.3em;
+  border-radius:0.25em;
 }
-hr{
-  width:80%;
-  border:0;
-  height:4px;
-  background:#b0bec5;
-  margin:1em auto;
+.muted{ color:var(--muted); }
+.small{ font-size:0.8em; }
+
+/* Top bar */
+.topbar{
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1em;
 }
-/* Config row */
+.brand{
+  display:flex;
+  align-items:center;
+  font-size:1.5em;
+  font-weight:700;
+  letter-spacing:0.01em;
+}
+.brand-icon{
+  width:1.4em;
+  height:1.4em;
+  margin-right:0.4em;
+}
+/* The shield follows the VPN state (body[data-vpn], set by updateStateLabel). */
+.brand-icon .shield{
+  fill:var(--muted);
+  transition:fill 0.3s;
+}
+.brand-icon .lock-body{ fill:var(--bg); }
+.brand-icon .lock-shackle{
+  fill:none;
+  stroke:var(--bg);
+  stroke-width:1.6;
+  stroke-linecap:round;
+}
+.brand-icon .lock-shackle.closed{ display:none; }
+[data-vpn="connecting"] .brand-icon .shield{ fill:var(--warn); }
+[data-vpn="connected"] .brand-icon .shield{ fill:var(--ok); }
+[data-vpn="connected"] .brand-icon .lock-shackle.closed{ display:inline; }
+[data-vpn="connected"] .brand-icon .lock-shackle.open{ display:none; }
+.topbar-actions{
+  display:flex;
+  align-items:center;
+}
+.tv-address{
+  color:var(--muted);
+  font-size:0.85em;
+  margin-right:1em;
+}
+.topbar-actions .btn-ghost + .btn-ghost{ margin-left:0.5em; }
+
+/* Cards */
+.layout{
+  flex:1;
+  min-height:0;
+  display:flex;
+  align-items:stretch;
+  margin:-0.5em;
+}
+.col-main{
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:0.7em;
+  padding:1.1em 1.3em;
+  margin:0.5em;
+  box-shadow:0 0.4em 1.2em rgba(0,0,0,0.18);
+}
+.status-card{ flex:none; }
+.setup-card{ flex:1 1 0; min-width:0; align-self:flex-start; max-height:100%; overflow:hidden; }
+/* Sized to its content, but shrinks to the space left so the log scrolls inside. */
+.log-card{
+  flex:0 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+h2{
+  margin:0 0 0.4em;
+  font-size:1.2em;
+}
+
+/* Status */
+.status{
+  display:flex;
+  align-items:center;
+  margin-bottom:1.1em;
+}
+.status-dot{
+  flex:none;
+  width:1.4em;
+  height:1.4em;
+  border-radius:50%;
+  margin-right:0.8em;
+  background:var(--muted);
+}
+.status-label,
+.field-label{
+  display:block;
+  font-size:0.7em;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--muted);
+}
+#state{
+  font-size:1.7em;
+  font-weight:700;
+  line-height:1.2;
+}
+.status-detail{
+  color:var(--muted);
+  font-size:0.85em;
+  min-height:1.2em;
+}
+.status.connected .status-dot{
+  background:var(--ok);
+  box-shadow:0 0 0 0.3em rgba(76,175,80,0.25);
+}
+.status.connected #state{ color:var(--ok); }
+.status.connecting .status-dot{
+  background:var(--warn);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+.status.connecting #state{ color:var(--warn); }
+.status.disconnected .status-dot{ background:var(--err); }
+@keyframes pulse{
+  0%,100%{ opacity:1; }
+  50%{ opacity:0.35; }
+}
+
+/* Controls */
+.field-label{ margin-bottom:0.3em; }
 .config-row{
   display:flex;
   flex-wrap:wrap;
-  justify-content:center;
   align-items:center;
-  gap:0.6em;
-  margin:1em auto;
 }
-.config-row select{
-  font-size:1em;
-  padding:0.3em 0.6em;
-  margin-right: 0.3em;
-  border-radius:0.2em;
-  background:#fff;
-  border:2px solid #009688;
-  min-width:460px;
+.config-row > *{ margin:0 0.5em 0.5em 0; }
+select,
+button,
+input{
+  font:inherit;
+  color:inherit;
+  border-radius:0.45em;
+  padding:0.4em 0.9em;
+  transition:background-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
+select{
+  flex:1 1 10em;
+  min-width:10em;
+  background:var(--surface-2);
+  border:2px solid var(--border);
+}
+select:disabled{ opacity:0.55; }
+input{
+  display:block;
+  width:100%;
+  max-width:18em;
+  margin-bottom:0.7em;
+  background:var(--surface-2);
+  border:2px solid var(--border);
+}
+.auth-form h2{ font-size:1em; }
 .btn-primary{
-  font-size:1em;
-  font-weight:bold;
-  padding:0.35em 1em;
-  background:#009688;
-  color:#fff;
-  border:none;
-  border-radius:0.25em;
-  min-width:300px;
+  font-weight:700;
+  min-width:7em;
+  background:var(--accent);
+  color:var(--accent-text);
+  border:2px solid var(--accent);
 }
-.btn-primary:disabled{
-  background:#80cbc4;
-  color:#eee;
+.btn-primary.is-stop{
+  background:var(--err);
+  border-color:var(--err);
+  color:#fff;
+}
+.btn-secondary{
+  background:var(--surface-2);
+  border:2px solid var(--border);
+}
+.btn-ghost{
+  font-size:0.8em;
+  padding:0.3em 0.8em;
+  background:transparent;
+  border:2px solid var(--border);
+  color:var(--muted);
+}
+button:disabled{
+  opacity:0.45;
   cursor:not-allowed;
-  opacity:0.6;
 }
 .item:focus{
-  outline:6px solid #ffeb3b;
-  outline-offset:4px;
+  outline:none;
+  box-shadow:0 0 0 0.15em var(--bg), 0 0 0 0.3em var(--focus);
 }
-/* Status & debug */
-#statusBlock{
-  font-size:1.1em;
-  margin-bottom:0.5em;
-}
-#state{
-  font-weight:bold;
-  margin-left:0.3em;
-}
-.connected{color:#2e7d32;}
-.connecting{color:#f9a825;}
-.disconnected{color:#c62828;}
-#debugInfo{
-  background:#eceff1;
-  color:#37474f;
-  text-align:left;
-  font-size:0.6em;
-  padding:0.4em;
-  width:90%;
-  max-height:25vh;
-  margin:0.5em auto;
-  overflow:auto;
-  border-radius:0.2em;
-}
+/* Only buttons grow on focus: a wide select or input would grow into its neighbours. */
+button.item:focus{ transform:scale(1.04); }
+button.item.active{ transform:scale(0.98); }
+
 #errorMsg{
+  color:var(--err);
   font-size:0.8em;
-  color:#c62828;
   word-wrap:break-word;
-  width:90%;
-  margin:0.3em auto;
+}
+#errorMsg:empty{ display:none; }
+#errorMsg:not(:empty){ margin-top:0.4em; }
+
+/* Setup help */
+.setup-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+}
+.steps{
+  margin:0.6em 0;
+  padding-left:1.3em;
+}
+.steps li{ margin-bottom:0.6em; line-height:1.4; }
+.cmd{
+  margin:0.4em 0;
+  padding:0.6em 0.8em;
+  font-size:0.75em;
+  white-space:pre-wrap;
+  word-break:break-all;
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-left:0.2em solid var(--accent);
+  border-radius:0.35em;
+}
+
+/* Log */
+.log-header{
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+#debugBlock{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+#debugInfo{
+  flex:1 1 auto;
+  min-height:3em;
+  margin:0.5em 0 0;
+  padding:0.6em 0.8em;
+  overflow:auto;
+  font-size:0.6em;
+  line-height:1.45;
+  color:var(--muted);
+  background:var(--code-bg);
+  border-radius:0.35em;
+  white-space:pre-wrap;
 }

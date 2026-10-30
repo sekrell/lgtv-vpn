@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -11,25 +11,103 @@
   <script src="./js/index.js" defer></script>
 </head>
 <body>
-  <h1>VPN Control</h1>
+  <header class="topbar">
+    <div class="brand">
+      <!-- Grey with an open padlock when disconnected, green and locked when connected. -->
+      <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="shield" d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/>
+        <rect class="lock-body" x="8.5" y="11" width="7" height="5.5" rx="1"/>
+        <path class="lock-shackle closed" d="M10 11V9.5a2 2 0 0 1 4 0V11"/>
+        <path class="lock-shackle open" d="M10 11V8.7a2 2 0 0 1 3.9-.7"/>
+      </svg>
+      <span>VPN Control</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="tvAddress" class="tv-address"></span>
+      <button id="notifyBtn" class="item btn-ghost">Notifications: On</button>
+      <button id="ipv6Btn" class="item btn-ghost">Block IPv6: On</button>
+      <button id="dnsBtn" class="item btn-ghost">VPN DNS: On</button>
+      <button id="themeBtn" class="item btn-ghost">Theme: Dark</button>
+    </div>
+  </header>
 
-  <div class="config-row">
-      <select id="configDropdown" class="item" disabled>
-        <!-- Options will be dynamically set -->
-      </select>
-      <button id="cbtn" class="item btn-primary" disabled>Connect</button>
-  </div>
+  <main class="layout">
+    <div class="col-main">
+      <section class="card status-card">
+        <div id="statusBlock" class="status disconnected">
+          <span class="status-dot"></span>
+          <div>
+            <div class="status-label">Status</div>
+            <div id="state">Checking…</div>
+            <div id="stateDetail" class="status-detail"></div>
+          </div>
+        </div>
 
-  <hr/>
+        <div id="controls" class="controls">
+          <label class="field-label" for="configDropdown">Profile</label>
+          <div class="config-row">
+            <select id="configDropdown" class="item" disabled>
+              <!-- Options will be dynamically set -->
+            </select>
+            <button id="cbtn" class="item btn-primary" disabled>Connect</button>
+            <button id="reloadBtn" class="item btn-secondary">Reload</button>
+          </div>
+        </div>
 
-  <div id="statusBlock">
-      <span class="status-label">Status:</span>
-      <span id="state">Checking…</span>
-  </div>
+        <div id="authForm" class="auth-form" hidden>
+          <h2 id="authTitle">Sign in to the VPN</h2>
+          <div id="authUserRow">
+            <label class="field-label" for="authUser">Username</label>
+            <input id="authUser" class="item" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"/>
+          </div>
+          <label class="field-label" for="authPass">Password</label>
+          <input id="authPass" class="item" type="password" autocomplete="off"/>
+          <div class="config-row">
+            <button id="authSubmit" class="item btn-primary">Sign in</button>
+            <button id="authCancel" class="item btn-secondary">Cancel</button>
+          </div>
+        </div>
 
-  <div id="debugBlock">
-    <pre id="debugInfo"></pre>
-  </div>
-  <div id="errorMsg"></div>
+        <div id="errorMsg"></div>
+      </section>
+
+      <section class="card log-card">
+        <div class="log-header">
+          <span class="field-label">Log</span>
+          <button id="logBtn" class="item btn-ghost">Hide log</button>
+        </div>
+        <div id="debugBlock">
+          <pre id="debugInfo"></pre>
+        </div>
+      </section>
+    </div>
+
+    <section id="setupCard" class="card setup-card" hidden>
+      <div class="setup-header">
+        <h2>Add a VPN profile</h2>
+        <button id="setupClose" class="item btn-ghost" hidden>Close</button>
+      </div>
+      <p class="muted">
+        The app reads OpenVPN <code>.ovpn</code> files from a folder on this TV.
+        Copy them over from your computer:
+      </p>
+      <ol class="steps">
+        <li>In the <strong>Homebrew Channel</strong> settings, turn on <strong>SSH Server</strong>.</li>
+        <li>
+          On your computer, open a terminal in the folder with your <code>.ovpn</code> file and run:
+          <pre id="scpCmd" class="cmd"></pre>
+          Copy any certificates or keys the profile references into the same folder.
+          The webOS Dev Manager app can upload files too.
+        </li>
+        <li>Press <strong>Reload</strong> to pick up the new profiles.</li>
+      </ol>
+      <p class="muted small">
+        Profiles that need a username or password will ask for it here when you connect.
+        To skip the prompt, put the username on the first line and the password on the second
+        in a file next to the profile, and point to it with <code>auth-user-pass login.txt</code>.
+      </p>
+      <p class="muted small">Profiles folder: <code id="profilesPath"></code></p>
+    </section>
+  </main>
 </body>
 </html>
