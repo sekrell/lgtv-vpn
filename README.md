@@ -51,6 +51,12 @@ The app expects your OpenVPN profiles to live in `/media/developer/apps/usr/palm
 1. Copy your `.ovpn` files (and any referenced certificates/keys) into that folder (possible also with [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop)).
 2. Launch the app and select the desired profile from the drop-down list, then press **Connect**.
 
+From a checkout of this repository, `copy-profile.sh` does this over SSH (enable the SSH server in the Homebrew Channel settings first):
+```bash
+./copy-profile.sh <tv-ip> ~/Downloads/my-vpn.ovpn [more.ovpn ...]
+```
+It also copies files the profile references (`ca`, `cert`, `key`, `tls-auth`, `auth-user-pass`, ...) when they sit next to it, then reopens the app so the new profiles are listed. Profiles go to the dev build when it is installed, otherwise to the released app; set `APP_ID=com.sk.app.lgtv-vpn` to choose the released app. The IP can also come from `TV_IP`.
+
 If the app finds no profiles, it shows these steps along with a ready-to-paste `scp` command for your TV (enable the SSH server in the Homebrew Channel settings first). Press **Reload** after copying. The dev build installed by `install-to-tv.sh` has its own folder, `.../com.sk.app.lgtv-vpn.dev/profiles`, and its setup steps show that path.
 
 Relative paths in a profile (`ca`, `cert`, `key`, `auth-user-pass` files) are resolved against the profiles folder.
